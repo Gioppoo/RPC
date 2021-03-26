@@ -140,7 +140,7 @@ class RPCClient extends EventEmitter {
    * @returns {Promise<RPCClient>}
    */
   async login(options = {}) {
-    retuen new promise (async (resolve, reject) => {
+    return new promise (async (resolve, reject) => {
       try
       {
         let { clientId, accessToken } = options;

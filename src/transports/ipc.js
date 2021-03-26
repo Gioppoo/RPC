@@ -107,44 +107,54 @@ class IPCTransport extends EventEmitter {
   }
 
   async connect() {
-    const socket = this.socket = await getIPC();
-    socket.on('close', this.onClose.bind(this));
-    socket.on('error', this.onClose.bind(this));
-    this.emit('open');
-    socket.write(encode(OPCodes.HANDSHAKE, {
-      v: 1,
-      client_id: this.client.clientId,
-    }));
-    socket.pause();
-    socket.on('readable', () => {
-      decode(socket, ({ op, data }) => {
-        switch (op) {
-          case OPCodes.PING:
-            this.send(data, OPCodes.PONG);
-            break;
-          case OPCodes.FRAME:
-            if (!data) {
-              return;
+    return new Promise (async (resolve, reject) => {
+      try
+      {
+        const socket = this.socket = await getIPC();
+        socket.on('close', this.onClose.bind(this));
+        socket.on('error', this.onClose.bind(this));
+        this.emit('open');
+        socket.write(encode(OPCodes.HANDSHAKE, {
+          v: 1,
+          client_id: this.client.clientId,
+        }));
+        socket.pause();
+        socket.on('readable', () => {
+          decode(socket, ({ op, data }) => {
+            switch (op) {
+              case OPCodes.PING:
+                this.send(data, OPCodes.PONG);
+                break;
+              case OPCodes.FRAME:
+                if (!data) {
+                  return;
+                }
+                if (data.cmd === 'AUTHORIZE' && data.evt !== 'ERROR') {
+                  findEndpoint()
+                    .then((endpoint) => {
+                      this.client.request.endpoint = endpoint;
+                    })
+                    .catch((e) => {
+                      this.client.emit('error', e);
+                    });
+                }
+                this.emit('message', data);
+                break;
+              case OPCodes.CLOSE:
+                this.emit('close', data);
+                break;
+              default:
+                break;
             }
-            if (data.cmd === 'AUTHORIZE' && data.evt !== 'ERROR') {
-              findEndpoint()
-                .then((endpoint) => {
-                  this.client.request.endpoint = endpoint;
-                })
-                .catch((e) => {
-                  this.client.emit('error', e);
-                });
-            }
-            this.emit('message', data);
-            break;
-          case OPCodes.CLOSE:
-            this.emit('close', data);
-            break;
-          default:
-            break;
-        }
-      });
-    });
+          });
+        });
+        resolve()
+      }
+      catch (e)
+      {
+        reject(e)
+      }
+    })
   }
 
   onClose(e) {

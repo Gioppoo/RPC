@@ -140,16 +140,25 @@ class RPCClient extends EventEmitter {
    * @returns {Promise<RPCClient>}
    */
   async login(options = {}) {
-    let { clientId, accessToken } = options;
-    await this.connect(clientId);
-    if (!options.scopes) {
-      this.emit('ready');
-      return this;
-    }
-    if (!accessToken) {
-      accessToken = await this.authorize(options);
-    }
-    return this.authenticate(accessToken);
+    retuen new promise (async (resolve, reject) => {
+      try
+      {
+        let { clientId, accessToken } = options;
+        await this.connect(clientId);
+        if (!options.scopes) {
+          this.emit('ready');
+          return this;
+        }
+        if (!accessToken) {
+          accessToken = await this.authorize(options);
+        }
+        resolve(this.authenticate(accessToken))
+      }
+      catch (e)
+      {
+        reject(e)
+      }
+    })
   }
 
   /**

@@ -24,19 +24,26 @@ function getIPCPath(id) {
 
 function getIPC(id = 0) {
   return new Promise((resolve, reject) => {
-    const path = getIPCPath(id);
-    const onerror = () => {
-      if (id < 10) {
-        resolve(getIPC(id + 1));
-      } else {
-        reject(new Error('Could not connect'));
-      }
-    };
-    const sock = net.createConnection(path, () => {
-      sock.removeListener('error', onerror);
-      resolve(sock);
-    });
-    sock.once('error', onerror);
+    try
+    {
+      const path = getIPCPath(id);
+      const onerror = () => {
+        if (id < 10) {
+          resolve(getIPC(id + 1));
+        } else {
+          reject(new Error('Could not connect'));
+        }
+      };
+      const sock = net.createConnection(path, () => {
+        sock.removeListener('error', onerror);
+        resolve(sock);
+      });
+      sock.once('error', onerror);
+    }
+    catch (e)
+    {
+      reject(e)
+    }
   });
 }
 
